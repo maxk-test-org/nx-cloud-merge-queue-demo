@@ -12,3 +12,7 @@ export function greet(id: number): string {
 export function farewell(id: number): string {
   return `Goodbye, ${capitalize(loadUserName(id))}!`;
 }
+
+export function welcome(id: number): string {
+  return `Welcome back, ${capitalize(loadUserName(id))}.`;
+}
