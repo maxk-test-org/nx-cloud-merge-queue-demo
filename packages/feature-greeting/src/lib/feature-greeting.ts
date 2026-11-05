@@ -8,3 +8,7 @@ export function featureGreeting(): string {
 export function greet(id: number): string {
   return `Hello, ${capitalize(loadUserName(id))}!`;
 }
+
+export function farewell(id: number): string {
+  return `Goodbye, ${capitalize(loadUserName(id))}!`;
+}
