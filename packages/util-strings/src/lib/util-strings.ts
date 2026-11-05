@@ -9,3 +9,7 @@ export function capitalize(value: string): string {
 export function shout(value: string): string {
   return `${value.toUpperCase()}!`;
 }
+
+export function whisper(value: string): string {
+  return value.toLowerCase();
+}
