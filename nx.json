@@ -46,5 +46,6 @@
     "test": {
       "dependsOn": ["^build"]
     }
-  }
+  },
+  "nxCloudId": "6aec810ac902a61065f25c48"
 }

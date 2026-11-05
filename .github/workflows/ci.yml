@@ -5,36 +5,89 @@ on:
     branches:
       - main
   pull_request:
+  merge_group:
 
 permissions:
   actions: read
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  main:
+  # Every `nx` command below creates its own Nx Cloud run, like a CI setup
+  # that calls nx once per target instead of once for everything.
+  checks:
+    name: checks (${{ matrix.shard }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [quality, tests, builds]
     steps:
       - uses: actions/checkout@v5
         with:
           filter: tree:0
           fetch-depth: 0
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/docs/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="e2e"
+      - uses: pnpm/action-setup@v4
 
-      # Cache node_modules
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-          cache: 'npm'
+          cache: pnpm
 
-      - run: npm ci
+      - run: pnpm install --frozen-lockfile
 
-      # Prepend any command with "nx record --" to record its logs to Nx Cloud
-      - run: npx nx record -- npx nx format:check --base="remotes/origin/main"
-      - run: npx nx run-many -t lint test build typecheck e2e
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/docs/features/ci-features/self-healing-ci
-      - run: npx nx fix-ci
+      - uses: nrwl/nx-set-shas@v4
+
+      - name: format
+        if: matrix.shard == 'quality'
+        run: pnpm nx format:check
+
+      - name: lint
+        if: matrix.shard == 'quality'
+        run: pnpm nx run-many -t lint
+
+      - name: typecheck
+        if: matrix.shard == 'quality'
+        run: pnpm nx run-many -t typecheck
+
+      - name: test
+        if: matrix.shard == 'tests'
+        run: pnpm nx run-many -t test
+
+      - name: test feature-greeting
+        if: matrix.shard == 'tests'
+        run: pnpm nx run @org/feature-greeting:test
+
+      - name: test util-strings
+        if: matrix.shard == 'tests'
+        run: pnpm nx run @org/util-strings:test
+
+      - name: build
+        if: matrix.shard == 'builds'
+        run: pnpm nx run-many -t build
+
+      - name: build feature-greeting
+        if: matrix.shard == 'builds'
+        run: pnpm nx run @org/feature-greeting:build
+
+      - name: affected
+        if: matrix.shard == 'builds'
+        run: pnpm nx affected -t lint test build typecheck
+
+      - name: self-healing
         if: always()
+        run: pnpm nx fix-ci
+
+  # Single stable check name for the ruleset to require.
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    needs: checks
+    if: always()
+    steps:
+      - name: all checks passed
+        run: test "${{ needs.checks.result }}" = "success"
