@@ -9,3 +9,7 @@ export function loadUserName(id: number): string {
 export function userCount(): number {
   return 3;
 }
+
+export function hasUser(id: number): boolean {
+  return id >= 0;
+}
