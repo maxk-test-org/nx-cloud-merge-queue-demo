@@ -2,6 +2,19 @@
   "extends": "./tsconfig.base.json",
   "compileOnSave": false,
   "files": [],
-  "references": [],
+  "references": [
+    {
+      "path": "./packages/util-strings"
+    },
+    {
+      "path": "./packages/util-math"
+    },
+    {
+      "path": "./packages/feature-greeting"
+    },
+    {
+      "path": "./packages/data-access"
+    }
+  ],
   "compilerOptions": {}
 }
